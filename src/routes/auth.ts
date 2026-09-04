@@ -1,46 +1,34 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'terceriza_chave_secreta_padrao';
 
-router.get('/login', (req, res) => {
+// Tela de Login
+router.get('/login', (req: Request, res: Response) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
       <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Terceriza - Login</title>
       <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background-color: #0d1b2a; color: #ffffff; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .card { background: #1b263b; padding: 2.5rem; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 1px solid #415a77; }
-        h2 { text-align: center; margin-bottom: 1.5rem; color: #fcc200; font-size: 1.8rem; font-weight: 700; }
-        .field { margin-bottom: 1.2rem; }
-        label { display: block; margin-bottom: 0.4rem; font-size: 0.9rem; color: #e0e1dd; }
-        input { width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #415a77; background: #0d1b2a; color: #ffffff; font-size: 1rem; outline: none; }
-        input:focus { border-color: #fcc200; }
-        button { width: 100%; padding: 0.75rem; border: none; border-radius: 6px; background: #fcc200; color: #0d1b2a; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s, transform 0.1s; margin-top: 0.5rem; }
-        button:hover { background: #e0ac00; }
+        body { background: #0d1b2a; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1b263b; padding: 2rem; border-radius: 8px; border: 1px solid #415a77; width: 300px; }
+        h2 { color: #fcc200; margin-bottom: 1rem; text-align: center; }
+        input { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border-radius: 4px; border: 1px solid #415a77; background: #0d1b2a; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 0.6rem; border: none; border-radius: 4px; background: #fcc200; color: #0d1b2a; font-weight: bold; cursor: pointer; }
       </style>
     </head>
     <body>
       <div class="card">
-        <h2>Terceriza</h2>
+        <h2>Entrar no Terceriza</h2>
         <form action="/auth/login" method="POST">
-          <div class="field">
-            <label for="email">E-mail</label>
-            <input type="email" id="email" name="email" required placeholder="seu@email.com">
-          </div>
-          <div class="field">
-            <label for="password">Senha</label>
-            <input type="password" id="password" name="password" required placeholder="••••••••">
-          </div>
-          <button type="submit">Entrar no Sistema</button>
+          <input type="email" name="email" placeholder="E-mail" required />
+          <input type="password" name="password" placeholder="Senha" required />
+          <button type="submit">Entrar</button>
         </form>
       </div>
     </body>
@@ -48,51 +36,37 @@ router.get('/login', (req, res) => {
   `);
 });
 
-router.post('/login', async (req, res) => {
+// Ação do Login
+router.post('/login', async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !user.password) {
-      return res.status(401).send(`
-        <div style="background:#0d1b2a; color:#fff; min-height:100vh; padding:2rem; font-family:sans-serif;">
-          <h3 style="color:#ff4d4d;">Usuário ou senha inválidos!</h3>
-          <a href="/auth/login" style="color:#fcc200;">Voltar</a>
-        </div>
-      `);
+      res.status(401).send('E-mail ou senha inválidos.');
+      return;
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcrypt.compare(password, user.password);
 
-    if (!isValidPassword) {
-      return res.status(401).send(`
-        <div style="background:#0d1b2a; color:#fff; min-height:100vh; padding:2rem; font-family:sans-serif;">
-          <h3 style="color:#ff4d4d;">Usuário ou senha inválidos!</h3>
-          <a href="/auth/login" style="color:#fcc200;">Voltar</a>
-        </div>
-      `);
+    if (!validPassword) {
+      res.status(401).send('E-mail ou senha inválidos.');
+      return;
     }
 
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '8h' }
-    );
+    const secret = process.env.JWT_SECRET || 'secret';
+    const token = jwt.sign({ userId: user.id, email: user.email }, secret, { expiresIn: '1d' });
 
-    res.cookie('token', token, { httpOnly: true, maxAge: 8 * 3600 * 1000 });
+    res.cookie('token', token, { httpOnly: true });
     res.redirect('/dashboard');
   } catch (error) {
-    res.status(500).send(`
-      <div style="background:#0d1b2a; color:#fff; min-height:100vh; padding:2rem; font-family:sans-serif;">
-        <h3 style="color:#ff4d4d;">Erro interno ao processar autenticação.</h3>
-      </div>
-    `);
+    res.status(500).send('Erro interno ao tentar fazer login.');
   }
 });
 
-// Rota GET - Encerra a sessão limpando o cookie
-router.get('/logout', (req, res) => {
+// Logout
+router.get('/logout', (req: Request, res: Response) => {
   res.clearCookie('token');
   res.redirect('/auth/login');
 });
