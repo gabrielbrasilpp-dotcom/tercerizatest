@@ -1,13 +1,23 @@
-import express from 'express'; 
-import userRoutes from './users'; 
-import serviceRoutes from './services'; 
- 
-const app = express(); 
- 
-app.use(express.json()); 
-app.use(userRoutes); 
-app.use(serviceRoutes); 
- 
-app.get('/', (req, res) => { res.json({ message: 'API TERCERIZA ok' }); }); 
- 
-app.listen(3000, () => console.log( 'SERVIDOR_RODANDO_NA_PORTA_3000' ));
+import express from 'express';
+import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import authRoutes from './routes/auth';
+import dashboardRoutes from './routes/dashboard';
+import companyRoutes from './routes/company';
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+app.use('/auth', authRoutes);
+app.use('/', dashboardRoutes);
+app.use('/', companyRoutes);
+
+app.listen(PORT, () => {
+  console.log(`SERVIDOR RODANDO NA PORTA ${PORT}`);
+});
