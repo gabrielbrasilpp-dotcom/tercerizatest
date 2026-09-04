@@ -1,0 +1,1 @@
+  jwt.verify(token, JWT_SECRET, (err, decoded) = 
