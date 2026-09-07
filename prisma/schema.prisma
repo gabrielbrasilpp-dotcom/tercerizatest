@@ -4,21 +4,21 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = "file:./dev.db"
 }
 
 model User {
   id        String   @id @default(uuid())
-  name      String
   email     String   @unique
+  name      String
+  role      String   @default("CLIENT")
   phone     String?
   city      String   @default("Ponta Porã - MS")
-  role      String   @default("CLIENT")
   createdAt DateTime @default(now())
 
   services  Service[]
-  orders    Order[]    @relation("ClientOrders")
-  proposals Proposal[] @relation("ProfessionalProposals")
+  orders    Order[]
+  proposals Proposal[]
   messages  Message[]
 }
 
@@ -28,45 +28,46 @@ model Service {
   category    String
   description String
   priceFrom   Float?
-  city        String
+  city        String   @default("Ponta Porã - MS")
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
 }
 
 model Order {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   title       String
   category    String
   description String
-  city        String
-  status      String   @default("OPEN")
+  city        String     @default("Ponta Porã - MS")
+  urgency     String     @default("Media")
+  budgetRange String     @default("A combinar")
+  deadline    String?
+  status      String     @default("OPEN")
   clientId    String
-  client      User     @relation("ClientOrders", fields: [clientId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-
+  client      User       @relation(fields: [clientId], references: [id])
   proposals   Proposal[]
+  createdAt   DateTime   @default(now())
 }
 
 model Proposal {
-  id             String   @id @default(uuid())
-  price          Float
-  notes          String?
+  id             String    @id @default(uuid())
   orderId        String
-  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order          Order     @relation(fields: [orderId], references: [id])
   professionalId String
-  professional   User     @relation("ProfessionalProposals", fields: [professionalId], references: [id], onDelete: Cascade)
-  createdAt      DateTime @default(now())
-
+  professional   User      @relation(fields: [professionalId], references: [id])
+  price          Float
+  status         String    @default("PENDING")
   messages       Message[]
+  createdAt      DateTime  @default(now())
 }
 
 model Message {
   id         String   @id @default(uuid())
-  text       String
-  senderId   String
-  sender     User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
   proposalId String
-  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+  senderId   String
+  sender     User     @relation(fields: [senderId], references: [id])
+  text       String
   createdAt  DateTime @default(now())
 }

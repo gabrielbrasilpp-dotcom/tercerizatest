@@ -138,34 +138,79 @@ app.get('/', async (req, res) => {
   `);
 });
 
-// TELA 2: LISTAGEM DINÂMICA DE SERVIÇOS (/services)
+// TELA 2: EXPLORAR SERVIÇOS
 app.get('/services', async (req, res) => {
   const cityFilter = (req.query.city as string) || 'Ponta Porã - MS';
-  
-  // Consulta REAL no banco de dados SQLite
+  const categoryFilter = (req.query.category as string) || 'TODAS';
+  const searchQuery = (req.query.q as string) || '';
+
+  const whereCondition: any = { city: cityFilter };
+
+  if (categoryFilter !== 'TODAS') {
+    whereCondition.category = categoryFilter;
+  }
+
+  if (searchQuery.trim() !== '') {
+    whereCondition.OR = [
+      { title: { contains: searchQuery } },
+      { description: { contains: searchQuery } }
+    ];
+  }
+
   const services = await prisma.service.findMany({
-    where: { city: cityFilter },
+    where: whereCondition,
     include: { user: true },
     orderBy: { createdAt: 'desc' }
   });
+
+  const categories = [
+    { id: 'TODAS', label: 'Todas as Categorias', icon: '⚡' },
+    { id: 'Manutenção Elétrica', label: 'Elétrica', icon: '💡' },
+    { id: 'Refrigeração', label: 'Refrigeração', icon: '❄️' },
+    { id: 'Pintura', label: 'Pintura', icon: '🎨' },
+    { id: 'Jardinagem', label: 'Jardinagem', icon: '🌱' }
+  ];
+
+  const categoryChipsHtml = categories.map(c => `
+    <a href="/services?city=${encodeURIComponent(cityFilter)}&category=${encodeURIComponent(c.id)}&q=${encodeURIComponent(searchQuery)}" 
+       class="chip ${categoryFilter === c.id ? 'active' : ''}">
+       ${c.icon} ${c.label}
+    </a>
+  `).join('');
 
   const cardsHtml = services.length > 0 ? services.map(s => `
     <div class="card">
       <div>
         <div class="card-header">
           <span class="badge">${s.category}</span>
-          <span style="color: #eab308;">★ 5.0</span>
+          <span class="rating">★ 5.0 (12)</span>
         </div>
-        <h3>${s.title}</h3>
-        <p>${s.description}</p>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">📍 ${s.city} | Profissional: <b>${s.user.name}</b></p>
+        <h3 class="card-title">${s.title}</h3>
+        <p class="card-desc">${s.description}</p>
+        
+        <div class="prof-info">
+          <div class="avatar">${s.user.name.charAt(0)}</div>
+          <div>
+            <strong>${s.user.name}</strong>
+            <small>📍 ${s.city} ${s.user.phone ? '• 📱 ' + s.user.phone : ''}</small>
+          </div>
+        </div>
       </div>
+
       <div class="card-footer">
-        <span class="price">${s.priceFrom ? 'A partir de R$ ' + s.priceFrom.toFixed(2) : 'Orçamento Grátis'}</span>
-        <a href="/proposals/chat" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem;">Solicitar Proposta</a>
+        <div>
+          <small class="price-label">Valor estimado</small>
+          <div class="price">${s.priceFrom ? 'R$ ' + s.priceFrom.toFixed(2) : 'A combinar'}</div>
+        </div>
+        <a href="/proposals/chat" class="btn btn-outline btn-sm">💬 Contatar</a>
       </div>
     </div>
-  `).join('') : `<p style="color: var(--text-muted);">Nenhum serviço encontrado para ${cityFilter}.</p>`;
+  `).join('') : `
+    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--card-border);">
+      <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 12px;">Nenhum serviço encontrado com os filtros selecionados.</p>
+      <a href="/services" class="btn btn-outline">Limpar Filtros</a>
+    </div>
+  `;
 
   res.send(`
     <!DOCTYPE html>
@@ -176,16 +221,35 @@ app.get('/services', async (req, res) => {
       <title>Explorar Serviços - Tercereiza</title>
       <style>
         ${commonStyles}
-        .search-bar { display: flex; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; }
-        .search-input { flex: 1; padding: 14px; min-width: 250px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); border-radius: 10px; font-size: 1rem; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; }
-        .card-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+        .search-section { background: var(--card-bg); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; margin-bottom: 24px; }
+        .search-bar { display: grid; grid-template-columns: 2fr 1fr 100px; gap: 12px; margin-bottom: 20px; }
+        .form-control { width: 100%; padding: 12px 16px; background: var(--bg-color); border: 1px solid var(--card-border); color: var(--text-main); border-radius: 10px; font-size: 0.95rem; outline: none; }
+        
+        .chips-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; }
+        .chip { padding: 8px 16px; background: var(--bg-color); border: 1px solid var(--card-border); border-radius: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: 0.2s; }
+        .chip:hover, .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease, border-color 0.2s ease; }
+        .card:hover { transform: translateY(-3px); border-color: var(--accent); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .badge { background: rgba(249, 115, 22, 0.15); color: var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
-        .card h3 { font-size: 1.2rem; margin-bottom: 8px; }
-        .card p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; }
-        .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--card-border); padding-top: 16px; margin-top: 16px; }
-        .price { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
+        .rating { color: #eab308; font-size: 0.85rem; font-weight: 700; }
+        .card-title { font-size: 1.25rem; margin-bottom: 8px; }
+        .card-desc { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .prof-info { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--card-border); padding-top: 16px; margin-top: auto; }
+        .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .prof-info small { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
+
+        .card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; margin-top: 16px; border-top: 1px dashed var(--card-border); }
+        .price-label { font-size: 0.75rem; color: var(--text-muted); display: block; }
+        .price { font-size: 1.2rem; font-weight: 800; color: var(--accent); }
+        .btn-sm { padding: 8px 14px; font-size: 0.85rem; }
+
+        @media (max-width: 768px) {
+          .search-bar { grid-template-columns: 1fr; }
+        }
       </style>
     </head>
     <body>
@@ -200,16 +264,27 @@ app.get('/services', async (req, res) => {
       </header>
 
       <div class="container">
-        <h1 style="margin-bottom: 10px;">Profissionais e Serviços Disponíveis</h1>
-        <p style="color: var(--text-muted); margin-bottom: 30px;">Dados carregados em tempo real do banco SQLite.</p>
+        <div class="search-section">
+          <form class="search-bar" method="GET" action="/services">
+            <input type="text" name="q" value="${searchQuery}" class="form-control" placeholder="O que você precisa hoje? (ex: fiação, pintura, ar condicionado)...">
+            <select name="city" class="form-control">
+              <option value="Ponta Porã - MS" ${cityFilter === 'Ponta Porã - MS' ? 'selected' : ''}>Ponta Porã - MS</option>
+              <option value="Dourados - MS" ${cityFilter === 'Dourados - MS' ? 'selected' : ''}>Dourados - MS</option>
+              <option value="Campo Grande - MS" ${cityFilter === 'Campo Grande - MS' ? 'selected' : ''}>Campo Grande - MS</option>
+            </select>
+            <input type="hidden" name="category" value="${categoryFilter}">
+            <button type="submit" class="btn">🔍 Buscar</button>
+          </form>
 
-        <form class="search-bar" method="GET" action="/services">
-          <select name="city" class="search-input" onchange="this.form.submit()">
-            <option value="Ponta Porã - MS" ${cityFilter === 'Ponta Porã - MS' ? 'selected' : ''}>Ponta Porã - MS</option>
-            <option value="Dourados - MS" ${cityFilter === 'Dourados - MS' ? 'selected' : ''}>Dourados - MS</option>
-            <option value="Campo Grande - MS" ${cityFilter === 'Campo Grande - MS' ? 'selected' : ''}>Campo Grande - MS</option>
-          </select>
-        </form>
+          <div class="chips-container">
+            ${categoryChipsHtml}
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2>Serviços Encontrados (${services.length})</h2>
+          ${(searchQuery || categoryFilter !== 'TODAS') ? `<a href="/services" style="color: var(--accent); font-size: 0.9rem; text-decoration: none;">✕ Limpar Filtros</a>` : ''}
+        </div>
 
         <div class="grid">
           ${cardsHtml}
@@ -227,7 +302,7 @@ app.get('/services', async (req, res) => {
   `);
 });
 
-// TELA 3: SALVAR NOVO PEDIDO NO BANCO (/services/new)
+// TELA 3: PUBLICAÇÃO DE PEDIDO AVANÇADA COM PREVIEW
 app.get('/services/new', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -238,10 +313,27 @@ app.get('/services/new', (req, res) => {
       <title>Publicar Pedido - Tercereiza</title>
       <style>
         ${commonStyles}
-        .form-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 32px; max-width: 650px; margin: 0 auto; }
+        .form-split { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 32px; align-items: start; }
+        .form-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 32px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.95rem; }
-        .form-control { width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--card-border); color: var(--text-main); border-radius: 10px; font-size: 1rem; outline: none; }
+        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.9rem; }
+        .form-control { width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--card-border); color: var(--text-main); border-radius: 10px; font-size: 0.95rem; outline: none; }
+        .form-control:focus { border-color: var(--accent); }
+
+        .preview-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; position: sticky; top: 100px; }
+        .preview-header { font-size: 0.85rem; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .preview-card { background: var(--bg-color); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; }
+        .badge-urgency { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: inline-block; }
+        .urgency-Alta { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .urgency-Media { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .urgency-Baixa { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+
+        @media (max-width: 900px) {
+          .form-split { grid-template-columns: 1fr; }
+          .form-row { grid-template-columns: 1fr; }
+          .preview-box { position: static; }
+        }
       </style>
     </head>
     <body>
@@ -256,43 +348,93 @@ app.get('/services/new', (req, res) => {
       </header>
 
       <div class="container">
-        <div class="form-card">
-          <h2 style="margin-bottom: 8px;">Publicar Novo Pedido de Serviço</h2>
-          <p style="color: var(--text-muted); margin-bottom: 24px;">Ao enviar, o registro será salvo na tabela Order do SQLite.</p>
+        <div class="form-split">
+          <div class="form-card">
+            <h2 style="margin-bottom: 8px;">Publicar Novo Pedido</h2>
+            <p style="color: var(--text-muted); margin-bottom: 24px;">Preencha os detalhes para os profissionais da região enviarem propostas.</p>
 
-          <form action="/api/orders" method="POST">
-            <div class="form-group">
-              <label>Título do Pedido</label>
-              <input type="text" name="title" class="form-control" placeholder="Ex: Preciso de troca de fiação" required>
+            <form action="/api/orders" method="POST">
+              <div class="form-group">
+                <label>Título do Pedido</label>
+                <input type="text" id="title" name="title" class="form-control" placeholder="Ex: Instalação de Ar-Condicionado 12000 BTUs" required oninput="updatePreview()">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Categoria do Serviço</label>
+                  <select id="category" name="category" class="form-control" onchange="updatePreview()">
+                    <option value="Manutenção Elétrica">💡 Manutenção Elétrica</option>
+                    <option value="Refrigeração">❄️ Refrigeração</option>
+                    <option value="Pintura">🎨 Pintura e Reformas</option>
+                    <option value="Jardinagem">🌱 Jardinagem</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Cidade / Localização</label>
+                  <select id="city" name="city" class="form-control" onchange="updatePreview()">
+                    <option value="Ponta Porã - MS">Ponta Porã - MS</option>
+                    <option value="Dourados - MS">Dourados - MS</option>
+                    <option value="Campo Grande - MS">Campo Grande - MS</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nível de Urgência</label>
+                  <select id="urgency" name="urgency" class="form-control" onchange="updatePreview()">
+                    <option value="Baixa">🟢 Baixa (Esta semana)</option>
+                    <option value="Media" selected>🟡 Média (Próximos 2-3 dias)</option>
+                    <option value="Alta">🔴 Alta / Urgente (Hoje/Amanhã)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Orçamento Estimado</label>
+                  <select id="budgetRange" name="budgetRange" class="form-control" onchange="updatePreview()">
+                    <option value="A combinar">A combinar</option>
+                    <option value="Até R$ 150">Até R$ 150</option>
+                    <option value="R$ 150 - R$ 400">R$ 150 - R$ 400</option>
+                    <option value="R$ 400 - R$ 1.000">R$ 400 - R$ 1.000</option>
+                    <option value="Acima de R$ 1.000">Acima de R$ 1.000</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Data / Prazo limite desejado (Opcional)</label>
+                <input type="date" id="deadline" name="deadline" class="form-control" onchange="updatePreview()">
+              </div>
+
+              <div class="form-group">
+                <label>Descrição Detalhada</label>
+                <textarea id="description" name="description" class="form-control" rows="4" placeholder="Descreva o problema, ambiente ou detalhes importantes..." required oninput="updatePreview()"></textarea>
+              </div>
+
+              <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 14px; font-size: 1.05rem; margin-top: 10px;">
+                🚀 Publicar Pedido no Banco
+              </button>
+            </form>
+          </div>
+
+          <div class="preview-box">
+            <div class="preview-header">👁️ Pré-visualização do Anúncio</div>
+            <div class="preview-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span id="prevCategory" style="font-size: 0.8rem; font-weight: 700; color: var(--accent);">💡 Manutenção Elétrica</span>
+                <span id="prevUrgency" class="badge-urgency urgency-Media">Urgência: Média</span>
+              </div>
+              <h3 id="prevTitle" style="font-size: 1.15rem; margin-bottom: 8px;">Título do seu pedido aqui</h3>
+              <p id="prevDesc" style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;">A descrição detalhada do seu pedido aparecerá aqui conforme você digita no formulário...</p>
+              
+              <div style="border-top: 1px dashed var(--card-border); padding-top: 12px; font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px;">
+                <div>📍 <b>Cidade:</b> <span id="prevCity">Ponta Porã - MS</span></div>
+                <div>💰 <b>Orçamento:</b> <span id="prevBudget">A combinar</span></div>
+                <div>📅 <b>Prazo:</b> <span id="prevDeadline">Não especificado</span></div>
+              </div>
             </div>
-
-            <div class="form-group">
-              <label>Categoria do Serviço</label>
-              <select name="category" class="form-control">
-                <option value="Manutenção Elétrica">Manutenção Elétrica</option>
-                <option value="Refrigeração">Refrigeração</option>
-                <option value="Pintura">Pintura e Reformas</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Cidade / Localização</label>
-              <select name="city" class="form-control">
-                <option value="Ponta Porã - MS">Ponta Porã - MS</option>
-                <option value="Dourados - MS">Dourados - MS</option>
-                <option value="Campo Grande - MS">Campo Grande - MS</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Descrição Detalhada</label>
-              <textarea name="description" class="form-control" rows="4" placeholder="Detalhe o que precisa ser feito..." required></textarea>
-            </div>
-
-            <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 14px; font-size: 1.05rem;">
-              🚀 Salvar Pedido no Banco
-            </button>
-          </form>
+          </div>
         </div>
       </div>
 
@@ -302,34 +444,64 @@ app.get('/services/new', (req, res) => {
         <a href="/services/new"><span>➕</span><span>Publicar</span></a>
         <a href="/proposals/chat"><span>💬</span><span>Mensagens</span></a>
       </nav>
+
+      <script>
+        function updatePreview() {
+          const title = document.getElementById('title').value || 'Título do seu pedido aqui';
+          const category = document.getElementById('category').value;
+          const city = document.getElementById('city').value;
+          const urgency = document.getElementById('urgency').value;
+          const budget = document.getElementById('budgetRange').value;
+          const deadline = document.getElementById('deadline').value;
+          const description = document.getElementById('description').value || 'A descrição detalhada aparecerá aqui...';
+
+          document.getElementById('prevTitle').innerText = title;
+          document.getElementById('prevCategory').innerText = category;
+          document.getElementById('prevCity').innerText = city;
+          document.getElementById('prevBudget').innerText = budget;
+          document.getElementById('prevDeadline').innerText = deadline ? new Date(deadline + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não especificado';
+          document.getElementById('prevDesc').innerText = description;
+
+          const urgencySpan = document.getElementById('prevUrgency');
+          urgencySpan.innerText = 'Urgência: ' + urgency;
+          urgencySpan.className = 'badge-urgency urgency-' + urgency;
+        }
+      </script>
     </body>
     </html>
   `);
 });
 
-// ENDPOINT API: SALVAR PEDIDO
+// ENDPOINT API: SALVAR PEDIDO COM NOVOS CAMPOS
 app.post('/api/orders', async (req, res) => {
   try {
-    const { title, category, city, description } = req.body;
-    
-    // Pega o primeiro cliente do banco para associar
+    const { title, category, city, urgency, budgetRange, deadline, description } = req.body;
     const client = await prisma.user.findFirst({ where: { role: 'CLIENT' } });
 
     if (client) {
       await prisma.order.create({
-        data: { title, category, city, description, clientId: client.id }
+        data: {
+          title,
+          category,
+          city,
+          urgency: urgency || 'Media',
+          budgetRange: budgetRange || 'A combinar',
+          deadline: deadline || null,
+          description,
+          clientId: client.id
+        }
       });
     }
 
     res.redirect('/proposals/chat');
   } catch (err) {
+    console.error(err);
     res.status(500).send('Erro ao salvar pedido.');
   }
 });
 
-// TELA 4: CHAT CONECTADO ÀS MENSAGENS DO BANCO (/proposals/chat)
+// TELA 4: CHAT
 app.get('/proposals/chat', async (req, res) => {
-  // Busca a primeira proposta e suas mensagens do banco
   const proposal = await prisma.proposal.findFirst({
     include: {
       professional: true,
@@ -410,7 +582,7 @@ app.get('/proposals/chat', async (req, res) => {
   `);
 });
 
-// ENDPOINT API: SALVAR MENSAGEM NO BANCO
+// ENDPOINT API: SALVAR MENSAGEM
 app.post('/api/messages', async (req, res) => {
   try {
     const { proposalId, text } = req.body;
@@ -429,5 +601,5 @@ app.post('/api/messages', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Tercereiza rodando perfeitamente na porta ${PORT}`);
+  console.log(`🚀 Tercereiza rodando na porta ${PORT}`);
 });
