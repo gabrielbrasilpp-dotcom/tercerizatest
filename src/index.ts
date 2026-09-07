@@ -92,6 +92,7 @@ app.get('/', async (req, res) => {
           <a href="/services">Serviços</a>
           <a href="/services/new">Publicar Pedido</a>
           <a href="/proposals/chat">Mensagens</a>
+          <a href="/admin" style="color: #ef4444;">🛡️ Admin</a>
         </nav>
         <button class="btn btn-outline" onclick="toggleTheme()">☀️ / 🌙 Tema</button>
       </header>
@@ -124,6 +125,7 @@ app.get('/', async (req, res) => {
         <a href="/services"><span>🔍</span><span>Buscar</span></a>
         <a href="/services/new"><span>➕</span><span>Publicar</span></a>
         <a href="/proposals/chat"><span>💬</span><span>Mensagens</span></a>
+        <a href="/admin"><span>🛡️</span><span>Admin</span></a>
       </nav>
 
       <script>
@@ -260,6 +262,7 @@ app.get('/services', async (req, res) => {
           <a href="/services" style="color: var(--accent);">Serviços</a>
           <a href="/services/new">Publicar Pedido</a>
           <a href="/proposals/chat">Mensagens</a>
+          <a href="/admin" style="color: #ef4444;">🛡️ Admin</a>
         </nav>
       </header>
 
@@ -296,13 +299,14 @@ app.get('/services', async (req, res) => {
         <a href="/services"><span>🔍</span><span>Buscar</span></a>
         <a href="/services/new"><span>➕</span><span>Publicar</span></a>
         <a href="/proposals/chat"><span>💬</span><span>Mensagens</span></a>
+        <a href="/admin"><span>🛡️</span><span>Admin</span></a>
       </nav>
     </body>
     </html>
   `);
 });
 
-// TELA 3: PUBLICAÇÃO DE PEDIDO AVANÇADA COM PREVIEW
+// TELA 3: PUBLICAÇÃO DE PEDIDO
 app.get('/services/new', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -344,6 +348,7 @@ app.get('/services/new', (req, res) => {
           <a href="/services">Serviços</a>
           <a href="/services/new" style="color: var(--accent);">Publicar Pedido</a>
           <a href="/proposals/chat">Mensagens</a>
+          <a href="/admin" style="color: #ef4444;">🛡️ Admin</a>
         </nav>
       </header>
 
@@ -443,6 +448,7 @@ app.get('/services/new', (req, res) => {
         <a href="/services"><span>🔍</span><span>Buscar</span></a>
         <a href="/services/new"><span>➕</span><span>Publicar</span></a>
         <a href="/proposals/chat"><span>💬</span><span>Mensagens</span></a>
+        <a href="/admin"><span>🛡️</span><span>Admin</span></a>
       </nav>
 
       <script>
@@ -472,7 +478,7 @@ app.get('/services/new', (req, res) => {
   `);
 });
 
-// ENDPOINT API: SALVAR PEDIDO COM NOVOS CAMPOS
+// ENDPOINT API: SALVAR PEDIDO
 app.post('/api/orders', async (req, res) => {
   try {
     const { title, category, city, urgency, budgetRange, deadline, description } = req.body;
@@ -544,6 +550,7 @@ app.get('/proposals/chat', async (req, res) => {
           <a href="/services">Serviços</a>
           <a href="/services/new">Publicar Pedido</a>
           <a href="/proposals/chat" style="color: var(--accent);">Mensagens</a>
+          <a href="/admin" style="color: #ef4444;">🛡️ Admin</a>
         </nav>
       </header>
 
@@ -576,6 +583,7 @@ app.get('/proposals/chat', async (req, res) => {
         <a href="/services"><span>🔍</span><span>Buscar</span></a>
         <a href="/services/new"><span>➕</span><span>Publicar</span></a>
         <a href="/proposals/chat"><span>💬</span><span>Mensagens</span></a>
+        <a href="/admin"><span>🛡️</span><span>Admin</span></a>
       </nav>
     </body>
     </html>
@@ -598,6 +606,135 @@ app.post('/api/messages', async (req, res) => {
   } catch (err) {
     res.status(500).send('Erro ao enviar mensagem.');
   }
+});
+
+// TELA 5: PAINEL DE ADMINISTRAÇÃO (DASHBOARD)
+app.get('/admin', async (req, res) => {
+  const userCount = await prisma.user.count();
+  const serviceCount = await prisma.service.count();
+  const orderCount = await prisma.order.count();
+  const proposalCount = await prisma.proposal.count();
+
+  const users = await prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
+  const orders = await prisma.order.findMany({ include: { client: true }, orderBy: { createdAt: 'desc' } });
+
+  const usersRows = users.map(u => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${u.name}</td>
+      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${u.email}</td>
+      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);"><span class="badge" style="background: ${u.role === 'PROFESSIONAL' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(34, 197, 94, 0.2)'}; color: ${u.role === 'PROFESSIONAL' ? '#3b82f6' : '#22c55e'};">${u.role}</span></td>
+      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${u.city}</td>
+    </tr>
+  `).join('');
+
+  const ordersRows = orders.map(o => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.title}</td>
+      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.category}</td>
+      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.client.name}</td>
+      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.urgency}</td>
+      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.budgetRange}</td>
+    </tr>
+  `).join('');
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="pt-BR" data-theme="dark">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Painel do Administrador - Tercereiza</title>
+      <style>
+        ${commonStyles}
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 14px; text-align: center; }
+        .stat-val { font-size: 2rem; font-weight: 800; color: var(--accent); margin-top: 6px; }
+        .table-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 20px; margin-bottom: 30px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        th { padding: 12px; border-bottom: 2px solid var(--card-border); color: var(--text-muted); }
+      </style>
+    </head>
+    <body>
+      <header>
+        <a href="/" class="logo"><span class="logo-icon">🛠️</span> Tercereiza</a>
+        <nav class="nav-links">
+          <a href="/">Início</a>
+          <a href="/services">Serviços</a>
+          <a href="/services/new">Publicar Pedido</a>
+          <a href="/proposals/chat">Mensagens</a>
+          <a href="/admin" style="color: #ef4444; font-weight: 800;">🛡️ Admin</a>
+        </nav>
+      </header>
+
+      <div class="container">
+        <h2 style="margin-bottom: 8px;">🛡️ Painel de Controle / Administrador</h2>
+        <p style="color: var(--text-muted); margin-bottom: 24px;">Visão geral dos dados cadastrados no banco SQLite.</p>
+
+        <div class="admin-grid">
+          <div class="stat-card">
+            <small style="color: var(--text-muted);">Usuários Registrados</small>
+            <div class="stat-val">${userCount}</div>
+          </div>
+          <div class="stat-card">
+            <small style="color: var(--text-muted);">Serviços Ativos</small>
+            <div class="stat-val">${serviceCount}</div>
+          </div>
+          <div class="stat-card">
+            <small style="color: var(--text-muted);">Pedidos Publicados</small>
+            <div class="stat-val">${orderCount}</div>
+          </div>
+          <div class="stat-card">
+            <small style="color: var(--text-muted);">Propostas Enviadas</small>
+            <div class="stat-val">${proposalCount}</div>
+          </div>
+        </div>
+
+        <div class="table-box">
+          <h3 style="margin-bottom: 16px;">👥 Usuários no Sistema</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Tipo (Role)</th>
+                <th>Cidade</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${usersRows}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-box">
+          <h3 style="margin-bottom: 16px;">📋 Pedidos de Clientes</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Categoria</th>
+                <th>Cliente</th>
+                <th>Urgência</th>
+                <th>Orçamento</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${ordersRows}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <nav class="bottom-nav">
+        <a href="/"><span>🏠</span><span>Início</span></a>
+        <a href="/services"><span>🔍</span><span>Buscar</span></a>
+        <a href="/services/new"><span>➕</span><span>Publicar</span></a>
+        <a href="/proposals/chat"><span>💬</span><span>Mensagens</span></a>
+        <a href="/admin"><span>🛡️</span><span>Admin</span></a>
+      </nav>
+    </body>
+    </html>
+  `);
 });
 
 app.listen(PORT, () => {
