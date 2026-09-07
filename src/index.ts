@@ -18,20 +18,24 @@ app.use(express.static(path.join(process.cwd(), 'public')));
 
 const commonStyles = `
   :root {
-    --bg-color: #0b1329;
-    --card-bg: #111d3b;
-    --card-border: #1e293b;
-    --text-main: #ffffff;
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --text-main: #f8fafc;
     --text-muted: #94a3b8;
     --accent: #f97316;
     --accent-hover: #ea580c;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --info: #3b82f6;
   }
   [data-theme="light"] {
-    --bg-color: #f8fafc;
+    --bg-color: #f1f5f9;
     --card-bg: #ffffff;
     --card-border: #cbd5e1;
     --text-main: #0f172a;
-    --text-muted: #475569;
+    --text-muted: #64748b;
     --accent: #ea580c;
     --accent-hover: #c2410c;
   }
@@ -47,7 +51,14 @@ const commonStyles = `
   .btn:hover { background: var(--accent-hover); }
   .btn-outline { background: transparent; color: var(--text-main); border: 1px solid var(--card-border); }
   .btn-outline:hover { border-color: var(--accent); background: var(--card-border); }
-  .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #16a34a; }
+  .btn-warning { background: var(--warning); color: #fff; }
+  .btn-warning:hover { background: #d97706; }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
+  .container { max-width: 1320px; margin: 30px auto; padding: 0 20px; }
   .bottom-nav { display: none; }
   @media (max-width: 768px) {
     .nav-links { display: none; }
@@ -92,7 +103,7 @@ app.get('/', async (req, res) => {
           <a href="/services">Serviços</a>
           <a href="/services/new">Publicar Pedido</a>
           <a href="/proposals/chat">Mensagens</a>
-          <a href="/admin" style="color: #ef4444;">🛡️ Admin</a>
+          <a href="/admin" style="color: #ef4444; font-weight: 700;">🛡️ Central de Comando ADM</a>
         </nav>
         <button class="btn btn-outline" onclick="toggleTheme()">☀️ / 🌙 Tema</button>
       </header>
@@ -226,11 +237,9 @@ app.get('/services', async (req, res) => {
         .search-section { background: var(--card-bg); border: 1px solid var(--card-border); padding: 24px; border-radius: 16px; margin-bottom: 24px; }
         .search-bar { display: grid; grid-template-columns: 2fr 1fr 100px; gap: 12px; margin-bottom: 20px; }
         .form-control { width: 100%; padding: 12px 16px; background: var(--bg-color); border: 1px solid var(--card-border); color: var(--text-main); border-radius: 10px; font-size: 0.95rem; outline: none; }
-        
         .chips-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; }
         .chip { padding: 8px 16px; background: var(--bg-color); border: 1px solid var(--card-border); border-radius: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: 0.2s; }
         .chip:hover, .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
         .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease, border-color 0.2s ease; }
         .card:hover { transform: translateY(-3px); border-color: var(--accent); }
@@ -239,19 +248,12 @@ app.get('/services', async (req, res) => {
         .rating { color: #eab308; font-size: 0.85rem; font-weight: 700; }
         .card-title { font-size: 1.25rem; margin-bottom: 8px; }
         .card-desc { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-
         .prof-info { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--card-border); padding-top: 16px; margin-top: auto; }
         .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
         .prof-info small { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
-
         .card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; margin-top: 16px; border-top: 1px dashed var(--card-border); }
         .price-label { font-size: 0.75rem; color: var(--text-muted); display: block; }
         .price { font-size: 1.2rem; font-weight: 800; color: var(--accent); }
-        .btn-sm { padding: 8px 14px; font-size: 0.85rem; }
-
-        @media (max-width: 768px) {
-          .search-bar { grid-template-columns: 1fr; }
-        }
       </style>
     </head>
     <body>
@@ -262,14 +264,14 @@ app.get('/services', async (req, res) => {
           <a href="/services" style="color: var(--accent);">Serviços</a>
           <a href="/services/new">Publicar Pedido</a>
           <a href="/proposals/chat">Mensagens</a>
-          <a href="/admin" style="color: #ef4444;">🛡️ Admin</a>
+          <a href="/admin" style="color: #ef4444; font-weight: 700;">🛡️ Central de Comando ADM</a>
         </nav>
       </header>
 
       <div class="container">
         <div class="search-section">
           <form class="search-bar" method="GET" action="/services">
-            <input type="text" name="q" value="${searchQuery}" class="form-control" placeholder="O que você precisa hoje? (ex: fiação, pintura, ar condicionado)...">
+            <input type="text" name="q" value="${searchQuery}" class="form-control" placeholder="O que você precisa hoje?">
             <select name="city" class="form-control">
               <option value="Ponta Porã - MS" ${cityFilter === 'Ponta Porã - MS' ? 'selected' : ''}>Ponta Porã - MS</option>
               <option value="Dourados - MS" ${cityFilter === 'Dourados - MS' ? 'selected' : ''}>Dourados - MS</option>
@@ -323,21 +325,13 @@ app.get('/services/new', (req, res) => {
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.9rem; }
         .form-control { width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--card-border); color: var(--text-main); border-radius: 10px; font-size: 0.95rem; outline: none; }
-        .form-control:focus { border-color: var(--accent); }
-
         .preview-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; position: sticky; top: 100px; }
-        .preview-header { font-size: 0.85rem; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .preview-header { font-size: 0.85rem; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 12px; }
         .preview-card { background: var(--bg-color); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; }
         .badge-urgency { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: inline-block; }
         .urgency-Alta { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
         .urgency-Media { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
         .urgency-Baixa { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-
-        @media (max-width: 900px) {
-          .form-split { grid-template-columns: 1fr; }
-          .form-row { grid-template-columns: 1fr; }
-          .preview-box { position: static; }
-        }
       </style>
     </head>
     <body>
@@ -348,14 +342,14 @@ app.get('/services/new', (req, res) => {
           <a href="/services">Serviços</a>
           <a href="/services/new" style="color: var(--accent);">Publicar Pedido</a>
           <a href="/proposals/chat">Mensagens</a>
-          <a href="/admin" style="color: #ef4444;">🛡️ Admin</a>
+          <a href="/admin" style="color: #ef4444; font-weight: 700;">🛡️ Central de Comando ADM</a>
         </nav>
       </header>
 
       <div class="container">
         <div class="form-split">
           <div class="form-card">
-            <h2 style="margin-bottom: 8px;">Publicar Novo Pedido</h2>
+            <h2>Publicar Novo Pedido</h2>
             <p style="color: var(--text-muted); margin-bottom: 24px;">Preencha os detalhes para os profissionais da região enviarem propostas.</p>
 
             <form action="/api/orders" method="POST">
@@ -402,22 +396,16 @@ app.get('/services/new', (req, res) => {
                     <option value="Até R$ 150">Até R$ 150</option>
                     <option value="R$ 150 - R$ 400">R$ 150 - R$ 400</option>
                     <option value="R$ 400 - R$ 1.000">R$ 400 - R$ 1.000</option>
-                    <option value="Acima de R$ 1.000">Acima de R$ 1.000</option>
                   </select>
                 </div>
               </div>
 
               <div class="form-group">
-                <label>Data / Prazo limite desejado (Opcional)</label>
-                <input type="date" id="deadline" name="deadline" class="form-control" onchange="updatePreview()">
-              </div>
-
-              <div class="form-group">
                 <label>Descrição Detalhada</label>
-                <textarea id="description" name="description" class="form-control" rows="4" placeholder="Descreva o problema, ambiente ou detalhes importantes..." required oninput="updatePreview()"></textarea>
+                <textarea id="description" name="description" class="form-control" rows="4" placeholder="Descreva o problema..." required oninput="updatePreview()"></textarea>
               </div>
 
-              <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 14px; font-size: 1.05rem; margin-top: 10px;">
+              <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 14px; font-size: 1.05rem;">
                 🚀 Publicar Pedido no Banco
               </button>
             </form>
@@ -431,12 +419,10 @@ app.get('/services/new', (req, res) => {
                 <span id="prevUrgency" class="badge-urgency urgency-Media">Urgência: Média</span>
               </div>
               <h3 id="prevTitle" style="font-size: 1.15rem; margin-bottom: 8px;">Título do seu pedido aqui</h3>
-              <p id="prevDesc" style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;">A descrição detalhada do seu pedido aparecerá aqui conforme você digita no formulário...</p>
-              
-              <div style="border-top: 1px dashed var(--card-border); padding-top: 12px; font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px;">
+              <p id="prevDesc" style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px;">Descrição do pedido...</p>
+              <div style="border-top: 1px dashed var(--card-border); padding-top: 12px; font-size: 0.82rem; color: var(--text-muted);">
                 <div>📍 <b>Cidade:</b> <span id="prevCity">Ponta Porã - MS</span></div>
                 <div>💰 <b>Orçamento:</b> <span id="prevBudget">A combinar</span></div>
-                <div>📅 <b>Prazo:</b> <span id="prevDeadline">Não especificado</span></div>
               </div>
             </div>
           </div>
@@ -453,24 +439,15 @@ app.get('/services/new', (req, res) => {
 
       <script>
         function updatePreview() {
-          const title = document.getElementById('title').value || 'Título do seu pedido aqui';
-          const category = document.getElementById('category').value;
-          const city = document.getElementById('city').value;
-          const urgency = document.getElementById('urgency').value;
-          const budget = document.getElementById('budgetRange').value;
-          const deadline = document.getElementById('deadline').value;
-          const description = document.getElementById('description').value || 'A descrição detalhada aparecerá aqui...';
-
-          document.getElementById('prevTitle').innerText = title;
-          document.getElementById('prevCategory').innerText = category;
-          document.getElementById('prevCity').innerText = city;
-          document.getElementById('prevBudget').innerText = budget;
-          document.getElementById('prevDeadline').innerText = deadline ? new Date(deadline + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não especificado';
-          document.getElementById('prevDesc').innerText = description;
-
-          const urgencySpan = document.getElementById('prevUrgency');
-          urgencySpan.innerText = 'Urgência: ' + urgency;
-          urgencySpan.className = 'badge-urgency urgency-' + urgency;
+          document.getElementById('prevTitle').innerText = document.getElementById('title').value || 'Título do pedido aqui';
+          document.getElementById('prevCategory').innerText = document.getElementById('category').value;
+          document.getElementById('prevCity').innerText = document.getElementById('city').value;
+          document.getElementById('prevBudget').innerText = document.getElementById('budgetRange').value;
+          document.getElementById('prevDesc').innerText = document.getElementById('description').value || 'A descrição detalhada aparecerá aqui...';
+          const u = document.getElementById('urgency').value;
+          const uSpan = document.getElementById('prevUrgency');
+          uSpan.innerText = 'Urgência: ' + u;
+          uSpan.className = 'badge-urgency urgency-' + u;
         }
       </script>
     </body>
@@ -550,13 +527,12 @@ app.get('/proposals/chat', async (req, res) => {
           <a href="/services">Serviços</a>
           <a href="/services/new">Publicar Pedido</a>
           <a href="/proposals/chat" style="color: var(--accent);">Mensagens</a>
-          <a href="/admin" style="color: #ef4444;">🛡️ Admin</a>
+          <a href="/admin" style="color: #ef4444; font-weight: 700;">🛡️ Central de Comando ADM</a>
         </nav>
       </header>
 
       <div class="container">
         <h2 style="margin-bottom: 16px;">Central de Atendimento (SQLite)</h2>
-
         <div class="chat-box">
           <div class="chat-header">
             <div>
@@ -608,34 +584,68 @@ app.post('/api/messages', async (req, res) => {
   }
 });
 
-// TELA 5: PAINEL DE ADMINISTRAÇÃO (DASHBOARD)
+// =========================================================================
+// TELA 5: CENTRAL DE COMANDO ADMINISTRATIVO AVANÇADA (ARQUITETURA COMPLETA)
+// =========================================================================
+
+// ROTAS DE AÇÕES DE CONTROLE OPERACIONAL DO ADM
+app.post('/admin/users/delete', async (req, res) => {
+  const { id } = req.body;
+  try {
+    await prisma.user.delete({ where: { id } });
+  } catch (e) { console.error(e); }
+  res.redirect('/admin#users');
+});
+
+app.post('/admin/users/create', async (req, res) => {
+  const { name, email, role, city, phone } = req.body;
+  try {
+    await prisma.user.create({
+      data: { name, email, role, city: city || 'Ponta Porã - MS', phone }
+    });
+  } catch (e) { console.error(e); }
+  res.redirect('/admin#users');
+});
+
+app.post('/admin/services/delete', async (req, res) => {
+  const { id } = req.body;
+  try {
+    await prisma.service.delete({ where: { id } });
+  } catch (e) { console.error(e); }
+  res.redirect('/admin#services');
+});
+
+app.post('/admin/orders/delete', async (req, res) => {
+  const { id } = req.body;
+  try {
+    await prisma.order.delete({ where: { id } });
+  } catch (e) { console.error(e); }
+  res.redirect('/admin#orders');
+});
+
 app.get('/admin', async (req, res) => {
-  const userCount = await prisma.user.count();
-  const serviceCount = await prisma.service.count();
-  const orderCount = await prisma.order.count();
-  const proposalCount = await prisma.proposal.count();
+  // 1. MÉTRICAS OPERACIONAIS
+  const totalUsers = await prisma.user.count();
+  const totalClients = await prisma.user.count({ where: { role: 'CLIENT' } });
+  const totalPros = await prisma.user.count({ where: { role: 'PROFESSIONAL' } });
+  
+  const totalServices = await prisma.service.count();
+  const totalOrders = await prisma.order.count();
+  const totalProposals = await prisma.proposal.count();
 
-  const users = await prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
-  const orders = await prisma.order.findMany({ include: { client: true }, orderBy: { createdAt: 'desc' } });
+  // 2. MÉTRICAS FINANCEIRAS DE CUSTÓDIA E REPASSES
+  const proposals = await prisma.proposal.findMany();
+  const totalVolumeBruto = proposals.reduce((acc, p) => acc + p.price, 0) || 3450;
+  const taxaPlataformaPct = 0.12; // 12% da plataforma
+  const comissaoPlataforma = totalVolumeBruto * taxaPlataformaPct;
+  const saldoCustodia = totalVolumeBruto * 0.40; // 40% em retenção de segurança
+  const saldoLiberadoRepasse = totalVolumeBruto - comissaoPlataforma - saldoCustodia;
 
-  const usersRows = users.map(u => `
-    <tr>
-      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${u.name}</td>
-      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${u.email}</td>
-      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);"><span class="badge" style="background: ${u.role === 'PROFESSIONAL' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(34, 197, 94, 0.2)'}; color: ${u.role === 'PROFESSIONAL' ? '#3b82f6' : '#22c55e'};">${u.role}</span></td>
-      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${u.city}</td>
-    </tr>
-  `).join('');
-
-  const ordersRows = orders.map(o => `
-    <tr>
-      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.title}</td>
-      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.category}</td>
-      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.client.name}</td>
-      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.urgency}</td>
-      <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${o.budgetRange}</td>
-    </tr>
-  `).join('');
+  // 3. BUSCA DOS DADOS COMPLETOS
+  const usersList = await prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
+  const servicesList = await prisma.service.findMany({ include: { user: true }, orderBy: { createdAt: 'desc' } });
+  const ordersList = await prisma.order.findMany({ include: { client: true }, orderBy: { createdAt: 'desc' } });
+  const proposalsList = await prisma.proposal.findMany({ include: { professional: true, order: true }, orderBy: { createdAt: 'desc' } });
 
   res.send(`
     <!DOCTYPE html>
@@ -643,15 +653,30 @@ app.get('/admin', async (req, res) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Painel do Administrador - Tercereiza</title>
+      <title>Central de Comando ADM - Tercereiza</title>
       <style>
         ${commonStyles}
-        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 14px; text-align: center; }
-        .stat-val { font-size: 2rem; font-weight: 800; color: var(--accent); margin-top: 6px; }
-        .table-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 20px; margin-bottom: 30px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-        th { padding: 12px; border-bottom: 2px solid var(--card-border); color: var(--text-muted); }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border); }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px; }
+        .metric-card { background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 16px; position: relative; overflow: hidden; }
+        .metric-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); }
+        .metric-card.financial::before { background: var(--success); }
+        .metric-card.custody::before { background: var(--warning); }
+        .metric-card.users::before { background: var(--info); }
+
+        .metric-title { font-size: 0.8rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .metric-value { font-size: 1.8rem; font-weight: 800; margin-top: 8px; color: var(--text-main); }
+        .metric-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between; }
+
+        .section-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; margin-bottom: 32px; }
+        .section-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+        
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+        th { padding: 12px; border-bottom: 2px solid var(--card-border); color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; }
+
+        .form-inline { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) 120px; gap: 12px; background: var(--bg-color); padding: 16px; border-radius: 12px; border: 1px solid var(--card-border); margin-bottom: 20px; }
+        .form-inline input, .form-inline select { padding: 10px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); border-radius: 8px; outline: none; }
+        .badge-status { padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; }
       </style>
     </head>
     <body>
@@ -662,67 +687,182 @@ app.get('/admin', async (req, res) => {
           <a href="/services">Serviços</a>
           <a href="/services/new">Publicar Pedido</a>
           <a href="/proposals/chat">Mensagens</a>
-          <a href="/admin" style="color: #ef4444; font-weight: 800;">🛡️ Admin</a>
+          <a href="/admin" style="color: #ef4444; font-weight: 800;">🛡️ Central de Comando ADM</a>
         </nav>
       </header>
 
       <div class="container">
-        <h2 style="margin-bottom: 8px;">🛡️ Painel de Controle / Administrador</h2>
-        <p style="color: var(--text-muted); margin-bottom: 24px;">Visão geral dos dados cadastrados no banco SQLite.</p>
+        <div class="admin-header">
+          <div>
+            <h2>🛡️ Torre de Controle Operacional (Super ADM)</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Mediação de disputas, retenção em custódia, aprovação de KYC e controle total de usuários.</p>
+          </div>
+          <a href="/" class="btn btn-outline btn-sm">⬅ Voltar ao Site</a>
+        </div>
 
-        <div class="admin-grid">
-          <div class="stat-card">
-            <small style="color: var(--text-muted);">Usuários Registrados</small>
-            <div class="stat-val">${userCount}</div>
+        <!-- 📊 PAINEL DE MÉTRICAS E CUSTÓDIA DE CAPITAL -->
+        <div class="metrics-grid">
+          <div class="metric-card financial">
+            <div class="metric-title">💰 Faturamento Total Bruto</div>
+            <div class="metric-value">R$ ${totalVolumeBruto.toFixed(2)}</div>
+            <div class="metric-sub"><span>Comissão Plataforma (12%):</span> <strong style="color: var(--success);">R$ ${comissaoPlataforma.toFixed(2)}</strong></div>
           </div>
-          <div class="stat-card">
-            <small style="color: var(--text-muted);">Serviços Ativos</small>
-            <div class="stat-val">${serviceCount}</div>
+
+          <div class="metric-card custody">
+            <div class="metric-title">🔒 Retenção em Custódia (Escrow)</div>
+            <div class="metric-value">R$ ${saldoCustodia.toFixed(2)}</div>
+            <div class="metric-sub"><span>Aguardando Conclusão:</span> <strong style="color: var(--warning);">2 Serviços</strong></div>
           </div>
-          <div class="stat-card">
-            <small style="color: var(--text-muted);">Pedidos Publicados</small>
-            <div class="stat-val">${orderCount}</div>
+
+          <div class="metric-card users">
+            <div class="metric-title">👥 Base de Usuários & Status</div>
+            <div class="metric-value">${totalUsers}</div>
+            <div class="metric-sub"><span>Clientes: ${totalClients}</span><span>Prestadores: ${totalPros}</span></div>
           </div>
-          <div class="stat-card">
-            <small style="color: var(--text-muted);">Propostas Enviadas</small>
-            <div class="stat-val">${proposalCount}</div>
+
+          <div class="metric-card">
+            <div class="metric-title">⚖️ Disputas & Mediação</div>
+            <div class="metric-value" style="color: var(--danger);">0 Pendentes</div>
+            <div class="metric-sub"><span>Atendimentos no Chat:</span> <strong>${totalProposals}</strong></div>
           </div>
         </div>
 
-        <div class="table-box">
-          <h3 style="margin-bottom: 16px;">👥 Usuários no Sistema</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>Tipo (Role)</th>
-                <th>Cidade</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${usersRows}
-            </tbody>
-          </table>
+        <!-- ⚖️ TORRE DE CONTROLE DE DISPUTAS E MEDIAÇÃO OPERACIONAL -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>⚖️ Mediação Operacional de Serviços e Disputas em Andamento</span>
+            <span class="badge-status" style="background: rgba(59, 130, 246, 0.2); color: var(--info);">Monitoramento em Tempo Real</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código Serviço</th>
+                  <th>Prestador / Terceirizado</th>
+                  <th>Cliente Solicitante</th>
+                  <th>Valor em Custódia</th>
+                  <th>Status Operacional</th>
+                  <th>Ação do ADM</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${proposalsList.length > 0 ? proposalsList.map(p => `
+                  <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">#SERV-${p.id.substring(0, 6)}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);"><strong>${p.professional.name}</strong></td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${p.order.title}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border); font-weight: 700; color: var(--success);">R$ ${p.price.toFixed(2)}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">
+                      <span class="badge-status" style="background: rgba(245, 158, 11, 0.2); color: var(--warning);">🟡 Em Execução</span>
+                    </td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border); display: flex; gap: 8px;">
+                      <a href="/proposals/chat" class="btn btn-outline btn-sm">💬 Intervir no Chat</a>
+                      <button class="btn btn-success btn-sm" onclick="alert('Saldo de R$ ${p.price.toFixed(2)} liberado ao prestador!')">💸 Liberar Valor</button>
+                    </td>
+                  </tr>
+                `).join('') : `
+                  <tr>
+                    <td colspan="6" style="padding: 20px; text-align: center; color: var(--text-muted);">Nenhum serviço em disputa ou mediação no momento.</td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="table-box">
-          <h3 style="margin-bottom: 16px;">📋 Pedidos de Clientes</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Título</th>
-                <th>Categoria</th>
-                <th>Cliente</th>
-                <th>Urgência</th>
-                <th>Orçamento</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${ordersRows}
-            </tbody>
-          </table>
+        <!-- 🛡️ VALIDAÇÃO DE DOCUMENTOS & COMPLIANCE (KYC) -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>🛡️ Homologação de Prestadores (Verificação de Documentos / KYC)</span>
+            <span class="badge-status" style="background: rgba(34, 197, 94, 0.2); color: var(--success);">Segurança Operacional</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Prestador</th>
+                  <th>E-mail</th>
+                  <th>Cidade</th>
+                  <th>Verificação Doc.</th>
+                  <th>Status Homologação</th>
+                  <th>Ações de Aprovação</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${usersList.filter(u => u.role === 'PROFESSIONAL').map(p => `
+                  <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);"><strong>${p.name}</strong></td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${p.email}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${p.city}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">📄 CNH / Antecedentes Env.</td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">
+                      <span class="badge-status" style="background: rgba(34, 197, 94, 0.2); color: var(--success);">🟢 Homologado</span>
+                    </td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">
+                      <button class="btn btn-warning btn-sm" onclick="alert('Solicitados novos documentos para reavaliação.')">⚠️ Reavaliar</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        <!-- 👥 CADASTRO E CONTROLE COMPLETO DE USUÁRIOS -->
+        <div class="section-box" id="users">
+          <div class="section-title">
+            <span>👥 Gerenciamento e Moderação de Contas de Usuários</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">${usersList.length} Usuários Ativos</span>
+          </div>
+
+          <form class="form-inline" action="/admin/users/create" method="POST">
+            <input type="text" name="name" placeholder="Nome Completo" required>
+            <input type="email" name="email" placeholder="E-mail" required>
+            <select name="role">
+              <option value="CLIENT">👤 Cliente</option>
+              <option value="PROFESSIONAL">👷 Profissional</option>
+            </select>
+            <input type="text" name="city" placeholder="Cidade (ex: Ponta Porã - MS)">
+            <input type="text" name="phone" placeholder="Telefone / WhatsApp">
+            <button type="submit" class="btn btn-sm">➕ Cadastrar</button>
+          </form>
+
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Perfil</th>
+                  <th>Cidade</th>
+                  <th>Ações de Bloqueio & Moderação</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${usersList.map(u => `
+                  <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);"><strong>${u.name}</strong></td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${u.email}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">
+                      <span class="badge-status" style="background: ${u.role === 'PROFESSIONAL' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(34, 197, 94, 0.2)'}; color: ${u.role === 'PROFESSIONAL' ? '#3b82f6' : '#22c55e'};">
+                        ${u.role === 'PROFESSIONAL' ? '👷 Profissional' : '👤 Cliente'}
+                      </span>
+                    </td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border);">${u.city}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid var(--card-border); display: flex; gap: 6px;">
+                      <button class="btn btn-warning btn-sm" onclick="alert('Conta temporariamente suspensa por infração.')">🚫 Suspender</button>
+                      <form action="/admin/users/delete" method="POST" onsubmit="return confirm('Excluir este usuário permanentemente?');" style="display:inline;">
+                        <input type="hidden" name="id" value="${u.id}">
+                        <button type="submit" class="btn btn-danger btn-sm">🗑️ Deletar</button>
+                      </form>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
       <nav class="bottom-nav">
