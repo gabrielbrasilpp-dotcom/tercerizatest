@@ -3,69 +3,70 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id                   String                @id @default(uuid())
-  email                String                @unique
-  password             String
-  name                 String
-  photo                String?
-  city                 String?
-  state                String?
-  description          String?
-  experience           String?
-  specialties          String?
-  ratingAverage        Float                 @default(0.0)
-  ratingCount          Int                   @default(0)
-  isVerified           Boolean               @default(false)
-  phoneVerified        Boolean               @default(false)
-  emailVerified        Boolean               @default(false)
-  identityVerified     Boolean               @default(false)
-  professionalVerified Boolean               @default(false)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  city      String   @default("Ponta Porã - MS")
+  role      String   @default("CLIENT")
+  createdAt DateTime @default(now())
 
-  professionalProfile  ProfessionalProfile?
-  clientServices       ServiceRequest[]      @relation("ClientServices")
+  services  Service[]
+  orders    Order[]    @relation("ClientOrders")
+  proposals Proposal[] @relation("ProfessionalProposals")
+  messages  Message[]
 }
 
-model ProfessionalProfile {
-  id                 String           @id @default(uuid())
-  userId             String           @unique
-  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profession         String
-  specialties        String?
-  yearsExperience    Int              @default(0)
-  description        String?
-  hourlyRate         Float?
-  dailyRate          Float?
-  serviceRate        Float?
-  availability       String?
-  serviceRadiusKm    Int?
-  citiesServed       String?
-  categories         String?
-  portfolio          String?
-  certificates       String?
-  completionRate     Float            @default(100.0)
-  verificationStatus String           @default("PENDING")
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-
-  providedServices   ServiceRequest[] @relation("ProfessionalServices")
+model Service {
+  id          String   @id @default(uuid())
+  title       String
+  category    String
+  description String
+  priceFrom   Float?
+  city        String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
 }
 
-model ServiceRequest {
-  id             String               @id @default(uuid())
-  title          String
-  description    String?
-  status         String               @default("PENDING")
-  clientId       String
-  client         User                 @relation("ClientServices", fields: [clientId], references: [id])
-  professionalId String?
-  professional   ProfessionalProfile? @relation("ProfessionalServices", fields: [professionalId], references: [id])
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+model Order {
+  id          String   @id @default(uuid())
+  title       String
+  category    String
+  description String
+  city        String
+  status      String   @default("OPEN")
+  clientId    String
+  client      User     @relation("ClientOrders", fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  proposals   Proposal[]
+}
+
+model Proposal {
+  id             String   @id @default(uuid())
+  price          Float
+  notes          String?
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   User     @relation("ProfessionalProposals", fields: [professionalId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+
+  messages       Message[]
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  text       String
+  senderId   String
+  sender     User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 }
